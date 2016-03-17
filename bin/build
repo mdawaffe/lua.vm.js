@@ -1,0 +1,21 @@
+#!/bin/bash
+
+set -e
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+cd "$DIR"/../lua
+
+cp src/luaconf.h.orig src/luaconf.h
+
+set +e
+
+patch -p0 < ../bin/emscripten.diff
+if [ 0 -ne $? ]; then
+	echo "ERROR: Could not patch" > /dev/stderr
+	exit 1
+fi
+
+set -e
+
+make emscripten

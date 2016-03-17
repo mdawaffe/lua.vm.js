@@ -1,0 +1,9 @@
+#!/bin/bash
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+cd "$DIR"/../lua
+
+git checkout -- .
+rm src/luaconf.h Makefile.orig src/Makefile.orig
+make clean

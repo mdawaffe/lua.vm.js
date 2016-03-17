@@ -1,0 +1,59 @@
+--- Makefile	2016-03-17 01:21:02.000000000 -0700
++++ Makefile.emscripten	2016-03-17 01:21:23.000000000 -0700
+@@ -39 +39 @@
+-PLATS= aix ansi bsd freebsd generic linux macosx mingw posix solaris
++PLATS= aix ansi bsd emscripten freebsd generic linux macosx mingw posix solaris
+--- src/Makefile	2016-03-17 01:04:17.000000000 -0700
++++ src/Makefile.emscripten	2016-03-17 01:04:03.000000000 -0700
+@@ -29 +29 @@
+-PLATS= aix ansi bsd freebsd generic linux macosx mingw posix solaris
++PLATS= aix ansi bsd emscripten freebsd generic linux macosx mingw posix solaris
+@@ -31,1 +31,2 @@
+ LUA_A=	liblua.a
++LUA_JS= ../../dist/lua.vm.js
+@@ -61,1 +62,6 @@
+ 
++$(LUA_JS): $(LUA_A)
++	$(CC) -o $@ $(SYSLDFLAGS) $(MYLDFLAGS) $(LUA_A) $(LIBS)
++	( echo '(function(exports){var module;' && cat $@ ) > tmp && mv tmp $@
++	echo ";exports['emscripten'] = Module;})(typeof module !== 'undefined'?module.exports:this);" >> $@
++
+@@ -68,3 +74,3 @@
+ clean:
+-	$(RM) $(ALL_T) $(ALL_O)
++	$(RM) $(ALL_T) $(ALL_O) $(LUA_JS)
+ 
+@@ -99,1 +105,16 @@
+ 
++emscripten:
++	$(MAKE) $(LUA_JS) \
++		CC="$(shell em-config EMCC)" \
++		AR="$(shell em-config EMAR) rcu" \
++		RANLIB="$(shell em-config EMRANLIB)" \
++		SYSLDFLAGS="-Os \
++			-s INVOKE_RUN=0 \
++			-s NO_EXIT_RUNTIME=1 \
++			-s TOTAL_MEMORY=134217728 \
++			-s RESERVED_FUNCTION_POINTERS=8 \
++			--memory-init-file 0 \
++			--post-js ../../src/lua.js \
++			--embed-file ../../src/js.lua@js.lua \
++			"
++
+--- src/luaconf.h	2016-03-17 01:47:03.000000000 -0700
++++ src/luaconf.h.emscripten	2016-03-17 01:46:57.000000000 -0700
+@@ -148,6 +148,14 @@
+ #define LUA_API __declspec(dllimport)
+ #endif
+ 
++#elif defined(EMSCRIPTEN)
++
++/*
++ * Forces LLVM to not dead-code-eliminate a function. This also
++ * exports the function, as if you added it to EXPORTED_FUNCTIONS.
++ */
++#define LUA_API     __attribute__((used)) extern
++
+ #else
+ 
+ #define LUA_API		extern
